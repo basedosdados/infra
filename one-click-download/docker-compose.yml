@@ -1,0 +1,11 @@
+version: '3'
+services:
+  zip:
+    image: us.gcr.io/basedosdados/test
+    build: .
+    ports: ['8080:8080']
+    volumes:
+    - ~/.config/gcloud:/root/.config/gcloud
+    - ~/.gsutil:/root/.gsutil
+    environment:
+      GOOGLE_CLOUD_PROJECT: basedosdados
