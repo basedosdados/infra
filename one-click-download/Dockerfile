@@ -10,4 +10,6 @@ ENV PATH=/google-cloud-sdk/bin:$PATH
 
 PIP --upgrade google-cloud-storage google-cloud-bigquery bottle boltons
 PIP --upgrade gsutil
-COPY *.py /app/
+APT zip
+
+COPY *.py bash_zip_table.sh /app/
