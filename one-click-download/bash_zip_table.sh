@@ -5,12 +5,16 @@ mkdir $DIR
 cd $DIR
 trap "rm -rf $DIR" EXIT
 
-mkfifo upload
+DATASET=${1:?}
+TABLE=${2:?}
+LIMIT=${3}
+if [[ $LIMIT ]]; then LIMIT="LIMIT ${LIMIT}"; fi
 
-gsutil rm -r 'gs://basedosdados-public/tmp/in/*' || true
-bq query --nouse_legacy_sql <<'EOF'
+
+gsutil -m rm -r "gs://basedosdados-public/tmp/to_zip/$DATASET/$TABLE/" || true
+bq query --nouse_legacy_sql <<EOF
     EXPORT DATA OPTIONS(
-        uri='gs://basedosdados-public/tmp/in/file*.csv',
+        uri="gs://basedosdados-public/tmp/to_zip/$DATASET/$TABLE/*.csv",
         format='CSV',
         overwrite=true,
         header=false,
@@ -18,12 +22,20 @@ bq query --nouse_legacy_sql <<'EOF'
         field_delimiter=',')
     AS
     SELECT *
-    FROM `basedosdados.br_ms_sim.municipio_causa_idade_genero_raca`
-    LIMIT 100000
+    FROM \`basedosdados.$DATASET.$TABLE\`
+    $LIMIT
 EOF
 
-gsutil cp 'gs://basedosdados-public/tmp/in/*' - | gzip - | tee upload | wc --bytes > bytes_written &
-gsutil cp upload gs://basedosdados-public/tmp/out
-gsutil ls -l gs://basedosdados-public/tmp/out
+BLOB_PATH="one-click-download/$DATASET/$TABLE.zip" # todo add {version}
+# FILE_NAME="${TABLE}.csv"
+# mkfifo $FILE_NAME
+mkfifo upload
+mkfifo byte_count
+mkfifo counter
+gsutil cp "gs://basedosdados-public/tmp/to_zip/$DATASET/$TABLE/*" - | tee counter | gzip - | tee upload byte_count > /dev/null &
+wc --bytes byte_count > bytes_written &
+gsutil cp upload gs://basedosdados-public/$BLOB_PATH &
+perl -nE 'say $. if ($. % 200000 == 0);' counter
+gsutil ls -l gs://basedosdados-public/$BLOB_PATH
 wait
 echo "Written $(cat bytes_written) bytes"
