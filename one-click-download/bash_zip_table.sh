@@ -8,15 +8,20 @@ trap "rm -rf $DIR" EXIT
 DATASET=${1:?}
 TABLE=${2:?}
 LIMIT=${3}
+DEBUG=${4}
+if [[ $DEBUG ]]; then DEBUG="test/"; fi
 if [[ $LIMIT ]]; then LIMIT="LIMIT ${LIMIT}"; fi
 
+BLOB_PATH="basedosdados-public/${DEBUG}one-click-download/$DATASET/$TABLE.zip" # todo add {version}
+SCRATCH_PATH="basedosdados-public/${DEBUG}tmp/to_zip/$DATASET/$TABLE"
 
-gsutil -m rm -r "gs://basedosdados-public/tmp/to_zip/$DATASET/$TABLE/" || true
-trap "gsutil -m rm -r 'gs://basedosdados-public/tmp/to_zip/$DATASET/$TABLE/' || true" EXIT
+gsutil -m rm -r "gs://$SCRATCH_PATH" || true
+trap "gsutil -m rm -r 'gs://$SCRATCH_PATH' || true" EXIT
 
+bq query --nouse_legacy_sql --format=csv "SELECT * FROM \`basedosdados.$DATASET.$TABLE\` LIMIT 1" | head -1 > headers # field names cant have newlines, bq forbids it
 bq query --nouse_legacy_sql <<EOF
     EXPORT DATA OPTIONS(
-        uri="gs://basedosdados-public/tmp/to_zip/$DATASET/$TABLE/*.csv",
+        uri="gs://$SCRATCH_PATH/*.csv",
         format='CSV',
         overwrite=true,
         header=false,
@@ -28,15 +33,16 @@ bq query --nouse_legacy_sql <<EOF
     $LIMIT
 EOF
 
-BLOB_PATH="one-click-download/$DATASET/$TABLE.zip" # todo add {version}
 FILE_NAME="${TABLE}.csv"
 mkfifo $FILE_NAME upload byte_count counter
-gsutil cp "gs://basedosdados-public/tmp/to_zip/$DATASET/$TABLE/*" - | tee counter > $FILE_NAME &
-zip --fifo - $FILE_NAME | tee upload > byte_count &
-wc --bytes byte_count > bytes_written &
-gsutil cp - gs://basedosdados-public/$BLOB_PATH < upload &
-perl -nE 'say $. if ($. % 200000 == 0);' < counter
-wait
-gsutil ls -l gs://basedosdados-public/$BLOB_PATH
+( cat headers ; gsutil cp "gs://$SCRATCH_PATH/*" - ) | tee counter > $FILE_NAME & PIDS="$PIDS $!"
+zip --fifo -6 - $FILE_NAME | tee upload > byte_count & PIDS="$PIDS $!"
+wc --bytes byte_count > bytes_written & PIDS="$PIDS $!"
+gsutil cp - gs://$BLOB_PATH < upload & PIDS="$PIDS $!"
+perl -nE 'say $. if ($. % 200000 == 0);' < counter & PIDS="$PIDS $!"
+trap "kill $PIDS > /dev/null || true" EXIT
+sleep 5 && kill -0 $PIDS # Abort if any sub process is dead
+for p in $PIDS; do wait -n ; done
+gsutil ls -l gs://$BLOB_PATH
 echo "Written $(cat bytes_written) bytes"
 echo Done
