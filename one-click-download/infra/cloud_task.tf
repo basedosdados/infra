@@ -42,7 +42,7 @@ resource "google_cloud_run_service" "zip_full_table_handler" {
         }
         resources {
             limits = {
-                memory = "650Mi"
+                memory = "500Mi"
             }
         }
       }
