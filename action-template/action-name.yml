@@ -1,0 +1,92 @@
+name: My Workflow
+on:
+  push:
+    branches:
+    - master
+jobs:
+
+  # Job to detect files changes.It saves 4 files, 
+  # - files.json          -> All modified, added and removed files
+  # - files_modified.json -> Only modified
+  # - files_added.json    -> Only added
+  # - files_removed.json  -> Only removed
+  #
+  # The content is a list of files such as ['file1.py', 'file2.py']
+  #
+  # The files are stored at `/github/workspace/files*.json` inside the container.
+  #
+  # This job saves the files as artifacts. Make sure to download it in another 
+  # job using: 
+  # - name: Download changes
+  #   uses: actions/download-artifact@v2
+  #   with:
+  #     name: <artifact-name>
+
+  get_changes:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Detect File Changes
+        id: file_changes
+        uses: trilom/file-changes-action@v1.2.3
+
+      - name: Copy files to home
+        run: |
+          cp $HOME/files.json files.json
+          cp $HOME/files_modified.json files_modified.json
+          cp $HOME/files_added.json files_added.json
+          cp $HOME/files_removed.json files_removed.json
+
+      - name: Upload Changes
+        uses: actions/upload-artifact@v2
+        with:
+          name: <artifact-name>
+          path: <file-to-save> 
+
+  # In order to use GCP applications, you need to setup the gcloud. The setup
+  # is important to get the credentials correctly.
+  #
+  # After that, you can call your Docker with an script.
+  #
+  # Pipeline: Checkout --> Setup GCP --> Call your task
+  #
+  # Don't forget to setup two secrets:
+  # GCP_MAIN_PROJECT_ID with the GCP project id
+  # GCP_SA_KEY_TASK_CALLER, the json credential in base64, ex: 
+  # `cat ~/gcloud-creds/basedosdados-cloudtask.json | base64`
+
+
+  to_cloud_tasks:
+    runs-on: ubuntu-latest
+    steps:
+
+      # -- DO NOT CHANGE -- #
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # https://github.com/google-github-actions/setup-gcloud/blob/master/setup-gcloud/README.md
+      - uses: google-github-actions/setup-gcloud@master
+        with:
+          version: '290.0.1'
+          project_id: ${{ secrets.GCP_MAIN_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY_TASK_CALLER }}
+          export_default_credentials: true
+      
+      # -- CHANGE BELOW -- #
+
+      - name: Download changes
+        uses: actions/download-artifact@v2
+        with:
+          name: <artifact-name>
+      
+      # Call your task
+      - name: Add to Cloud Task
+        uses: ./.github/workflows/add-to-cloudtask # path to task or github project
+        with:
+          project_id: ${{ secrets.GCP_MAIN_PROJECT_ID }}
+          location: ${{ secrets.GCP_LOCATION }}
+          queue: ${{ secrets.GCP_ONECLICK_QUEUE }}
+          taskurl: ${{ secrets.GCP_ONECLICK_URL }}
+          service_account: ${{ secrets.GCP_ONECLICK_EMAIL }}
+          
+

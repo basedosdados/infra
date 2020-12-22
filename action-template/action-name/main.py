@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
+import os
 from google.cloud import tasks_v2
-from google.oauth2 import service_account
 from google.protobuf import timestamp_pb2, duration_pb2
 import json
 from pathlib import Path
@@ -11,11 +10,11 @@ def add_to_queue(
     dataset,
     table,
     limit,
-    project="basedosdados",
-    queue="zip-full-table",
-    location="us-east1",
-    url="https://zip-full-table-6op2ytwc6q-ue.a.run.app",
-    service_account_email="task-caller@basedosdados.iam.gserviceaccount.com",
+    project,
+    queue,
+    location,
+    url,
+    service_account_email,
     in_seconds=None,
     task_name=None,
 ):
@@ -50,32 +49,37 @@ def add_to_queue(
     response = client.create_task(request={"parent": parent, "task": task})
 
     print("Created task {}".format(response.name))
-    print(response)
+    print(f"Dataset: {dataset} Table: {table}")
 
 
-def main(main_project_path, credentials_path, runall=False):
+def main():
 
-    # Create a client.
-    credentials = service_account.Credentials.from_service_account_file(
-        credentials_path
-    )
-    client = tasks_v2.CloudTasksClient(credentials=credentials)
+    client = tasks_v2.CloudTasksClient()
 
-    if runall:
-        p = Path(main_project_path)
-        for f in (p / "bases").glob("*/*"):
-            dataset, table = str(f).split("/")[-2:]
+    files = json.load(Path("/github/workspace/files.json").open("r"))
+
+    for f in files:
+
+        folder, *rest = f.split("/")
+
+        if folder == "bases":
+
+            dataset, table, *_ = rest
 
             if table not in ("README.md", "code"):
-                add_to_queue(client, dataset, table, limit=None)
 
-    # add_to_queue(client, dataset="br_inep_ideb", table="regiao", limit=100)
+                add_to_queue(
+                    client,
+                    dataset=dataset,
+                    table=table,
+                    limit=None,
+                    project=os.environ.get("INPUT_PROJECT_ID"),
+                    queue=os.environ.get("INPUT_QUEUE"),
+                    location=os.environ.get("INPUT_LOCATION"),
+                    url=os.environ.get("INPUT_TASKURL"),
+                    service_account_email=os.environ.get("INPUT_SERVICE_ACCOUNT"),
+                )
 
 
 if __name__ == "__main__":
-
-    main(
-        main_project_path="/Users/joaoc/Documents/Projects/mais/",  #
-        credentials_path="/Users/joaoc/gcloud-creds/basedosdados-cloudtask.json",
-        runall=True,
-    )
+    main()
