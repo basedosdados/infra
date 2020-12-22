@@ -40,8 +40,8 @@ zip --fifo -6 - $FILE_NAME | tee upload > byte_count & PIDS="$PIDS $!"
 wc --bytes byte_count > bytes_written & PIDS="$PIDS $!"
 gsutil cp - gs://$BLOB_PATH < upload & PIDS="$PIDS $!"
 perl -nE 'say $. if ($. % 200000 == 0);' < counter & PIDS="$PIDS $!"
-trap "kill $PIDS > /dev/null || true" EXIT
-sleep 5 && kill -0 $PIDS # Abort if any sub process is dead
+trap "kill $PIDS 2> /dev/null || true" EXIT
+sleep 1 && kill -0 $PIDS # Abort if any sub process is dead
 for p in $PIDS; do wait -n ; done
 gsutil ls -l gs://$BLOB_PATH
 echo "Written $(cat bytes_written) bytes"
