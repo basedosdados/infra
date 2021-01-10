@@ -2,6 +2,8 @@
 import bottle
 from zip_table import zip_full_table_and_store
 import json, subprocess
+import load_secrets
+load_secrets.load_secret_from_env()
 
 app = bottle.Bottle()
 
@@ -13,12 +15,6 @@ def zip_bash():
     if body.get('debug'): args.append(str(body['debug']))
     output = subprocess.run(args, capture_output=False, encoding='utf8')
     return {'output': 'ok'}
-
-@app.route('/python', method='POST')
-def zip_python():
-    body = bottle.request.json
-    output = zip_full_table_and_store(body['dataset'], body['table'], body.get('limit'))
-    return {'output': output}
 
 @app.error()
 def error(e):

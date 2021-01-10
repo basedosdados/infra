@@ -19,7 +19,7 @@ gsutil -m rm -r "gs://$SCRATCH_PATH" || true
 trap "gsutil -m rm -r 'gs://$SCRATCH_PATH' || true" EXIT
 
 bq query --nouse_legacy_sql --format=csv "SELECT * FROM \`basedosdados.$DATASET.$TABLE\` LIMIT 1" | head -1 > headers # field names cant have newlines, bq forbids it
-bq query --nouse_legacy_sql <<EOF
+bq query --nouse_legacy_sql --allow_large_results <<EOF
     EXPORT DATA OPTIONS(
         uri="gs://$SCRATCH_PATH/*.csv",
         format='CSV',
@@ -45,4 +45,5 @@ sleep 1 && kill -0 $PIDS # Abort if any sub process is dead
 for p in $PIDS; do wait -n ; done
 gsutil ls -l gs://$BLOB_PATH
 echo "Written $(cat bytes_written) bytes"
+./update_resource_metadata_in_ckan.py $DATASET $TABLE '{"bdm_file_size": '"$(cat bytes_written)"'}'
 echo Done

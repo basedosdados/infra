@@ -42,13 +42,14 @@ resource "google_cloud_run_service" "zip_full_table_handler" {
         }
         resources {
             limits = {
-                memory = "500Mi"
+                memory = "1000Mi"
             }
         }
       }
       timeout_seconds = 3600
     }
   }
+    autogenerate_revision_name=true
 
   traffic {
     percent         = 100

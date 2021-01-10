@@ -8,11 +8,7 @@ RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud
     && mv google-cloud-sdk /
 ENV PATH=/google-cloud-sdk/bin:$PATH
 
-# RUN curl -L https://github.com/BurntSushi/xsv/releases/download/0.13.0/xsv-0.13.0-x86_64-unknown-linux-musl.tar.gz  | tar xz \
-#     && mv xsv /bin/
-
-PIP --upgrade google-cloud-storage google-cloud-bigquery bottle boltons
-PIP --upgrade gsutil
+PIP --upgrade google-cloud-storage google-cloud-bigquery google-cloud-secret-manager bottle boltons click ckanapi gsutil
 APT zip
 
 COPY *.py bash_zip_table.sh /app/
