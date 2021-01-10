@@ -36,7 +36,14 @@ resource "google_cloud_run_service" "zip_full_table_handler" {
       container_concurrency = 1
       containers {
         image = "${local.docker_image_name}@${data.external.docker_image.result.sha}"
-
+        env     {
+          name = "SECRETS"
+          value = "[\"projects/337627637791/secrets/infra-bot/versions/latest\"]"
+        }
+        env {
+          name = "CKAN_URL"
+          value = "https://basedosdados.org"
+        }
         ports {
           container_port = 8080
         }
