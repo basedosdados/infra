@@ -13,7 +13,7 @@ def zip_bash():
     args = ['/app/bash_zip_table.sh', body['dataset'], body['table'],]
     if body.get('limit'): args.append(body['limit'])
     if body.get('debug'): args.append(str(body['debug']))
-    output = subprocess.run(args, capture_output=False, encoding='utf8')
+    output = subprocess.run(args, capture_output=False, encoding='utf8', check=True)
     return {'output': 'ok'}
 
 @app.error()

@@ -8,7 +8,7 @@ RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud
     && mv google-cloud-sdk /
 ENV PATH=/google-cloud-sdk/bin:$PATH
 
-PIP --upgrade google-cloud-storage google-cloud-bigquery google-cloud-secret-manager bottle boltons click ckanapi gsutil
+PIP --upgrade google-cloud-storage google-cloud-bigquery google-cloud-secret-manager bottle boltons click ckanapi gsutil stringcase
 APT zip
 
 COPY *.py bash_zip_table.sh /app/
