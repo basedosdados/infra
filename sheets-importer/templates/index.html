@@ -1,0 +1,27 @@
+<html>
+<head>
+</head>
+<body>
+    <h1> Insert sheets </h1>
+    <form action="/" method="POST" id="form1">
+    <label for="sheets_url">sheets url:</label>
+    <input type="text" name="sheets_url" value="{{url}}"> </input>
+    <button type="submit">LOAD</button>
+    </form>
+    {% if has_dataset %}
+        <h2> Loaded these datasets and resources </h2>
+        <h3> Datasets </h3>
+        {{datasets.to_html() | safe}}
+        <h3> Resources </h3>
+        {{resources.to_html() | safe}}
+
+        <h2> Found these changes </h2>
+        To be developed...
+        <form action="/datasets/" method="POST" id="form1">
+        <input type="hidden" id="datasets" name="datasets" value='{{datasets.to_json()}}'>
+        <input type="hidden" id="resources" name="resources" value="{{ 1 }}">
+        <button type="submit">Apply changes</button>
+        </form>
+    {%endif%}
+</body>
+</html>

@@ -11,4 +11,5 @@ ENV PATH=/google-cloud-sdk/bin:$PATH
 PIP --upgrade google-cloud-storage google-cloud-bigquery google-cloud-secret-manager bottle boltons click ckanapi gsutil stringcase
 APT zip
 
-COPY *.py bash_zip_table.sh /app/
+COPY one-click-download/*.py one-click-download/bash_zip_table.sh /app/
+COPY ckan_utils/ /app/ckan_utils/
