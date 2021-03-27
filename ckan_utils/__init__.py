@@ -1,4 +1,4 @@
-import os, json, re
+import os, json, re, requests
 import functools
 import stringcase
 from ckanapi import RemoteCKAN
@@ -41,3 +41,12 @@ def check_package_by_name(package_name):
     package_dict = basedosdados.action.package_show(id=package_name)
     updated_resource = basedosdados.action.package_update(**package_dict)
     print(f'Package {package_name} succesfully updated!')
+
+def check_all_packages():
+    api_url = CKAN_URL + '/api/3/action/package_list'
+    result = requests.get(api_url)
+    assert result.status_code == 200
+    
+    package_list = json.loads(result.text)['result']
+    for package_name in package_list:
+        check_package_by_name(package_name)
