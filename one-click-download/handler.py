@@ -13,7 +13,11 @@ def zip_bash():
     args = ['/app/bash_zip_table.sh', body['dataset'], body['table'],]
     if body.get('limit'): args.append(body['limit'])
     if body.get('debug'): args.append(str(body['debug']))
-    output = subprocess.run(args, capture_output=False, encoding='utf8', check=True)
+    try:
+        # only capture stderr
+        output = subprocess.run(args, stderr=subprocess.PIPE, encoding='utf8', check=True)
+    except subprocess.CalledProcessError as e:
+        raise ScriptException(f'Error (script retured {e.returncode}' + '\n' + e.stderr)
     return {'output': 'ok'}
 
 @app.error()
@@ -22,5 +26,7 @@ def error(e):
     bottle.response.set_header('Content-Type', 'application/json')
     bottle.response.body = json.dumps({'error': e.traceback, 'code': e.status_code})
     return bottle.response
+
+class ScriptException: pass
 
 bottle.run(app, host='0.0.0.0', port=8080)
