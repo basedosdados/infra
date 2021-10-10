@@ -1,4 +1,20 @@
 #!/usr/bin/env python3
+
+##########################
+#
+#     This is not in use as it is too slow. Bash version is in prod, but the plan is to optimize python version and retire bash version.
+#
+##########################
+
+
+
+
+
+
+
+
+
+
 from functools import partial
 from sys import argv
 import os, csv, encodings, subprocess, gzip
